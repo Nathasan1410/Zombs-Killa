@@ -44,25 +44,27 @@
       var yangDipencet = {};
       function keyDn(e) {
         yangDipencet[e.keyCode] = true;
-        //panah kiri
-        if (yangDipencet[37] == true) {
-          player.xSpeed = player.xSpeed - 1;
+        // Press Key A
+        if (yangDipencet[65] == true && player.xSpeed > -5) {
+          player.xSpeed -= 4;
         }
-        //panah kanan
-        if (yangDipencet[39] == true) {
-          player.xSpeed = player.xSpeed + 1;
+        // Press Key D
+        if (yangDipencet[68] == true && player.xSpeed < 5) {
+          player.xSpeed += 4;
         }
-        //panah atas
-        if (yangDipencet[38] == true) {
-            player.ySpeed = player.ySpeed - 1;
+        // Press Key W
+        if (yangDipencet[87] == true && player.ySpeed > -5) {
+            player.ySpeed -= 4;
         }
-        //panah bawah
-        if (yangDipencet[40] == true) {
-            player.ySpeed = player.ySpeed + 1;
+        // Press Key S
+        if (yangDipencet[83] == true && player.ySpeed < 5) {
+            player.ySpeed += 4;
         }
       }
       function keyUp(e) {
         delete yangDipencet[e.keyCode];
+        player.ySpeed = 0;
+        player.xSpeed = 0;
       }
 
 
