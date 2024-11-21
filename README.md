@@ -3,7 +3,7 @@ Tugas projek akhir dari mata kuliah Grafika Game. Merupakan sebuah game yang dib
 
 Anggota:
 
-71220872/Nathanael Santoso
+71220872/Nathanael Santoso\n
 
 71220829/Timotios Ekana Tejo Kesuma
 
