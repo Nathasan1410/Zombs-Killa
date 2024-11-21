@@ -38,7 +38,7 @@
       };
 
       
-      /* -- deteksi keyboard -- */
+      //    Deteksi Keyboard
       window.addEventListener("keydown", keyDn, true);
       window.addEventListener("keyup", keyUp, true);
       var yangDipencet = {};
@@ -68,6 +68,53 @@
       }
 
 
+      //    Deteksi Mouse
+      window.addEventListener("mousedown", mouseDn, true);
+
+
+      //    Function Mouse
+      msx = 0;
+      msy = 0;
+      var ditekan = false;
+      function mouseDn(e) {
+        msx = e.pageX - 10;
+        msy = e.pageY - 10;
+        ditekan = true;
+
+        //buat sebuah tipe data objek titik untuk menampung
+        clickPoint = {
+          x: msx,
+          y: msy,
+        };
+        player.sudut = sudutArahObjek(player, clickPoint);
+      }
+      //fungsi yang dilakukan saat mouse digerakkan
+
+      //fungsi sudutArahObjek
+      function sudutArahObjek(objAsal, objTujuan) {
+        //menghasilkan sudut dari normal (0 pi rad atau atas), dari posisi objek asal, menuju ke objek tujuan
+        //hitung jarak objek tujuan dari objek asal
+        jarakx = objTujuan.x - objAsal.x;
+        jaraky = objTujuan.y - objAsal.y;
+        //perkirakan kuadrannya
+        if (jarakx < 0) {
+          sudut = 1.5 * Math.PI + Math.atan(jaraky / jarakx);
+        } else {
+          sudut = 0.5 * Math.PI + Math.atan(jaraky / jarakx);
+        }
+        //normalisasi sudut
+        //kembalikan ke nilai di luar PI
+        sudut = sudut / Math.PI;
+        //kembalikan ke range 0-2 PI
+        if (sudut > 2) {
+          sudut = sudut - 2;
+        }
+        if (sudut < 0) {
+          sudut = sudut + 2;
+        }
+        return sudut;
+      }
+
       //    Gambar Bola belum fix 
       function gambar_bola() {
         /* -- Menggambar Bola -- */
@@ -82,7 +129,7 @@
           //translasikan koordinat objek
         ctx.translate(player.x, player.y);
         //rotasikan hadap objek
-       
+        ctx.rotate(player.sudut * Math.PI);
         //digambar playernya
         ctx.beginPath();
         ctx.arc(0, 0, player.jarijari, 0, 2 * Math.PI, false);
