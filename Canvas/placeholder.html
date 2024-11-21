@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zombs Killa</title>
+  </head>
+  <style>
+    #myCanvas {
+      border: 2px solid #000000;
+    }
+  </style>
+  <body>
+    <canvas id="myCanvas"></canvas>
+    <script>
+      //   Initiate Canvas
+      var canvas = document.getElementById("myCanvas");
+      var ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth - 20;
+      canvas.height = window.innerHeight - 20;
+
+      //  Initiate Player
+      var jarijaribola = 20;
+      xawal =
+        Math.floor(Math.random() * (800 - 2 * jarijaribola)) + jarijaribola;
+      yawal =
+        Math.floor(Math.random() * (600 - 2 * jarijaribola)) + jarijaribola;
+      wawal = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
+      var player = {
+        x: xawal,
+        y: yawal,
+        xSpeed: 0,
+        ySpeed: 0,
+        warna: wawal,
+        sudut: 0,
+        jarijari: jarijaribola,
+        magnet: 150 + jarijaribola,
+        maxSpeed: 5,
+        acceleration: 0.5,
+        
+      };
+
+      
+      //    Deteksi Keyboard
+      window.addEventListener("keydown", keyDn, true);
+      window.addEventListener("keyup", keyUp, true);
+      var yangDipencet = {};
+      function keyDn(e) {
+        yangDipencet[e.keyCode] = true;
+        // Press Key A
+        if (yangDipencet[65] == true && player.xSpeed > -5) {
+          player.xSpeed -= 4;
+        }
+        // Press Key D
+        if (yangDipencet[68] == true && player.xSpeed < 5) {
+          player.xSpeed += 4;
+        }
+        // Press Key W
+        if (yangDipencet[87] == true && player.ySpeed > -5) {
+            player.ySpeed -= 4;
+        }
+        // Press Key S
+        if (yangDipencet[83] == true && player.ySpeed < 5) {
+            player.ySpeed += 4;
+        }
+      }
+      function keyUp(e) {
+        delete yangDipencet[e.keyCode];
+        player.ySpeed = 0;
+        player.xSpeed = 0;
+      }
+
+
+      //    Deteksi Mouse
+      window.addEventListener("mousedown", mouseDn, true);
+
+
+      //    Function Mouse
+      msx = 0;
+      msy = 0;
+      var ditekan = false;
+      function mouseDn(e) {
+        msx = e.pageX - 10;
+        msy = e.pageY - 10;
+        ditekan = true;
+
+        //buat sebuah tipe data objek titik untuk menampung
+        clickPoint = {
+          x: msx,
+          y: msy,
+        };
+        player.sudut = sudutArahObjek(player, clickPoint);
+      }
+      //fungsi yang dilakukan saat mouse digerakkan
+
+      //fungsi sudutArahObjek
+      function sudutArahObjek(objAsal, objTujuan) {
+        //menghasilkan sudut dari normal (0 pi rad atau atas), dari posisi objek asal, menuju ke objek tujuan
+        //hitung jarak objek tujuan dari objek asal
+        jarakx = objTujuan.x - objAsal.x;
+        jaraky = objTujuan.y - objAsal.y;
+        //perkirakan kuadrannya
+        if (jarakx < 0) {
+          sudut = 1.5 * Math.PI + Math.atan(jaraky / jarakx);
+        } else {
+          sudut = 0.5 * Math.PI + Math.atan(jaraky / jarakx);
+        }
+        //normalisasi sudut
+        //kembalikan ke nilai di luar PI
+        sudut = sudut / Math.PI;
+        //kembalikan ke range 0-2 PI
+        if (sudut > 2) {
+          sudut = sudut - 2;
+        }
+        if (sudut < 0) {
+          sudut = sudut + 2;
+        }
+        return sudut;
+      }
+
+      //    Gambar Bola belum fix 
+      function gambar_bola() {
+        /* -- Menggambar Bola -- */
+        ctx.save();
+        
+        //rekalkulasi koordinat
+        player.x =
+          player.x + player.xSpeed;
+        player.y =
+          player.y + player.ySpeed
+        
+          //translasikan koordinat objek
+        ctx.translate(player.x, player.y);
+        //rotasikan hadap objek
+        ctx.rotate(player.sudut * Math.PI);
+        //digambar playernya
+        ctx.beginPath();
+        ctx.arc(0, 0, player.jarijari, 0, 2 * Math.PI, false);
+        ctx.closePath();
+        ctx.fillStyle = player.warna;
+        ctx.fill();
+
+        //digambar cucuknya
+        ctx.beginPath();
+        ctx.moveTo(0, -player.jarijari);
+        ctx.lineTo(+10, -10);
+        ctx.lineTo(-10, -10);
+        ctx.closePath();
+        ctx.fillStyle = "#ffff00";
+        ctx.strokeStyle = "#666666";
+        ctx.stroke();
+        ctx.fill();
+        ctx.restore();
+
+        //tampilkan kecepatan dan sudut
+        ctx.fillStyle = "#000000";
+        ctx.font = "14px Arial";
+        ctx.fillText(
+          "Kecepatan X: " + player.xSpeed,
+          player.x - player.jarijari,
+          player.y + player.jarijari + 20
+        );
+        ctx.fillText(
+          "Kecepatan Y: " + player.ySpeed,
+          player.x - player.jarijari,
+          player.y + player.jarijari + 40
+        );
+        ctx.fillText(
+          "Sudut: " + player.sudut.toFixed(2),
+          player.x - player.jarijari,
+          player.y + player.jarijari + 60
+        );
+        ctx.fillText(
+          "Koord: " + player.x.toFixed(2) + ", " + player.y.toFixed(2),
+          player.x - player.jarijari,
+          player.y + player.jarijari + 80
+        );
+        
+
+      }
+
+      /* -- penggambaran dinamis -- */
+      function gambarkan() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        /* menggambar objek dinamisnya */
+
+
+        gambar_bola();
+      }
+      setInterval(gambarkan, 20);
+    </script>
+  </body>
+</html>
