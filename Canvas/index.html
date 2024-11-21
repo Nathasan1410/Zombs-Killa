@@ -41,25 +41,24 @@
       function gambar_bola() {
         /* -- Menggambar Bola -- */
         ctx.save();
+        
         //rekalkulasi koordinat
         player.x =
-          player.x +
-          0 * Math.cos(player.sudut * Math.PI) -
-          player.offset * Math.sin(player.sudut * Math.PI);
+          player.x + player.xSpeed;
         player.y =
-          player.y +
-          0 * Math.sin(player.sudut * Math.PI) +
-          player.offset * Math.cos(player.sudut * Math.PI);
-        //translasikan koordinat objek
+          player.y + player.ySpeed
+        
+          //translasikan koordinat objek
         ctx.translate(player.x, player.y);
         //rotasikan hadap objek
-        ctx.rotate(player.sudut * Math.PI);
+       
         //digambar playernya
         ctx.beginPath();
         ctx.arc(0, 0, player.jarijari, 0, 2 * Math.PI, false);
         ctx.closePath();
         ctx.fillStyle = player.warna;
         ctx.fill();
+
         //digambar cucuknya
         ctx.beginPath();
         ctx.moveTo(0, -player.jarijari);
@@ -76,19 +75,24 @@
         ctx.fillStyle = "#000000";
         ctx.font = "14px Arial";
         ctx.fillText(
-          "Offset: " + player.offset,
+          "Kecepatan X: " + player.xSpeed,
           player.x - player.jarijari,
           player.y + player.jarijari + 20
         );
         ctx.fillText(
-          "Sudut: " + player.sudut.toFixed(2),
+          "Kecepatan Y: " + player.xSpeed,
           player.x - player.jarijari,
           player.y + player.jarijari + 40
         );
         ctx.fillText(
-          "Koord: " + player.x.toFixed(2) + ", " + player.y.toFixed(2),
+          "Sudut: " + player.sudut.toFixed(2),
           player.x - player.jarijari,
           player.y + player.jarijari + 60
+        );
+        ctx.fillText(
+          "Koord: " + player.x.toFixed(2) + ", " + player.y.toFixed(2),
+          player.x - player.jarijari,
+          player.y + player.jarijari + 80
         );
         ctx.fillText(
           "Jarak: " +
@@ -97,37 +101,18 @@
           player.y + player.jarijari + 80
         );
 
-        //update kecepatan player - haste arrive
+        //Update kecepatan player - haste arrive
         if (player.seek == true) {
           var speed = Math.round(
             euDist(player.x, player.y, player.x_tujuan, player.y_tujuan) / 20
           );
           player.offset = -speed;
         }
-
-        //stopper player panggil (klik datang)
-        if (
-          euDist(player.x, player.y, player.x_tujuan, player.y_tujuan) <= radius_reg
-        ) {
-          player.offset = 0; //offset dinolkan
-          player.seek = false; //beritahu mode seek tidak aktif
-        } else if (player.offset < 0) {
-          // brake gaya gesej by keyboard
-          player.offset += 0.2;
-        }
       }
 
       /* -- penggambaran dinamis -- */
       function gambarkan() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        /* background dst masuk sini */
-        if (bola.x < 0 || bola.x > canvas.width) {
-          bola.sudut = 2 - bola.sudut;
-        }
-
-        if (bola.y < 0 || bola.y > canvas.height) {
-          bola.sudut = 1 - bola.sudut;
-        }
 
         /* menggambar objek dinamisnya */
 
