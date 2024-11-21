@@ -27,17 +27,13 @@
       yawal =
         Math.floor(Math.random() * (600 - 2 * jarijaribola)) + jarijaribola;
       wawal = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
-      sawal = Math.random() * 2;
-      var bola = {
+      var player = {
         x: xawal,
         y: yawal,
         warna: wawal,
         sudut: 0,
-        offset: 0,
         jarijari: jarijaribola,
         seek: false,
-        x_tujuan: 0,
-        y_tujuan: 0,
         barrier_luar: 120 + jarijaribola,
         barrier_dalem: 60 + jarijaribola,
       };
