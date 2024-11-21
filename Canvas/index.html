@@ -19,7 +19,6 @@
       canvas.width = window.innerWidth - 20;
       canvas.height = window.innerHeight - 20;
 
-
       //  Initiate Player
       var jarijaribola = 20;
       xawal =
@@ -30,16 +29,112 @@
       var player = {
         x: xawal,
         y: yawal,
+        xSpeed: 0,
+        ySpeed: 0,
         warna: wawal,
         sudut: 0,
         jarijari: jarijaribola,
-        seek: false,
-        barrier_luar: 120 + jarijaribola,
-        barrier_dalem: 60 + jarijaribola,
+        magnet: 150 + jarijaribola,
       };
 
+      //    Gambar Bola belum fix 
+      function gambar_bola() {
+        /* -- Menggambar Bola -- */
+        ctx.save();
+        //rekalkulasi koordinat
+        player.x =
+          player.x +
+          0 * Math.cos(player.sudut * Math.PI) -
+          player.offset * Math.sin(player.sudut * Math.PI);
+        player.y =
+          player.y +
+          0 * Math.sin(player.sudut * Math.PI) +
+          player.offset * Math.cos(player.sudut * Math.PI);
+        //translasikan koordinat objek
+        ctx.translate(player.x, player.y);
+        //rotasikan hadap objek
+        ctx.rotate(player.sudut * Math.PI);
+        //digambar playernya
+        ctx.beginPath();
+        ctx.arc(0, 0, player.jarijari, 0, 2 * Math.PI, false);
+        ctx.closePath();
+        ctx.fillStyle = player.warna;
+        ctx.fill();
+        //digambar cucuknya
+        ctx.beginPath();
+        ctx.moveTo(0, -player.jarijari);
+        ctx.lineTo(+10, -10);
+        ctx.lineTo(-10, -10);
+        ctx.closePath();
+        ctx.fillStyle = "#ffff00";
+        ctx.strokeStyle = "#666666";
+        ctx.stroke();
+        ctx.fill();
+        ctx.restore();
 
-      //
+        //tampilkan kecepatan dan sudut
+        ctx.fillStyle = "#000000";
+        ctx.font = "14px Arial";
+        ctx.fillText(
+          "Offset: " + player.offset,
+          player.x - player.jarijari,
+          player.y + player.jarijari + 20
+        );
+        ctx.fillText(
+          "Sudut: " + player.sudut.toFixed(2),
+          player.x - player.jarijari,
+          player.y + player.jarijari + 40
+        );
+        ctx.fillText(
+          "Koord: " + player.x.toFixed(2) + ", " + player.y.toFixed(2),
+          player.x - player.jarijari,
+          player.y + player.jarijari + 60
+        );
+        ctx.fillText(
+          "Jarak: " +
+            euDist(player.x, player.y, player.x_tujuan, player.y_tujuan).toFixed(2),
+          player.x - player.jarijari,
+          player.y + player.jarijari + 80
+        );
+
+        //update kecepatan player - haste arrive
+        if (player.seek == true) {
+          var speed = Math.round(
+            euDist(player.x, player.y, player.x_tujuan, player.y_tujuan) / 20
+          );
+          player.offset = -speed;
+        }
+
+        //stopper player panggil (klik datang)
+        if (
+          euDist(player.x, player.y, player.x_tujuan, player.y_tujuan) <= radius_reg
+        ) {
+          player.offset = 0; //offset dinolkan
+          player.seek = false; //beritahu mode seek tidak aktif
+        } else if (player.offset < 0) {
+          // brake gaya gesej by keyboard
+          player.offset += 0.2;
+        }
+      }
+
+      /* -- penggambaran dinamis -- */
+      function gambarkan() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        /* background dst masuk sini */
+        if (bola.x < 0 || bola.x > canvas.width) {
+          bola.sudut = 2 - bola.sudut;
+        }
+
+        if (bola.y < 0 || bola.y > canvas.height) {
+          bola.sudut = 1 - bola.sudut;
+        }
+
+        /* menggambar objek dinamisnya */
+
+
+        gambar_bola();
+      }
+      setInterval(gambarkan, 20);
     </script>
   </body>
 </html>
