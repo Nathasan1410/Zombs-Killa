@@ -37,6 +37,35 @@
         magnet: 150 + jarijaribola,
       };
 
+      
+      /* -- deteksi keyboard -- */
+      window.addEventListener("keydown", keyDn, true);
+      window.addEventListener("keyup", keyUp, true);
+      var yangDipencet = {};
+      function keyDn(e) {
+        yangDipencet[e.keyCode] = true;
+        //panah kiri
+        if (yangDipencet[37] == true) {
+          player.xSpeed = player.xSpeed - 1;
+        }
+        //panah kanan
+        if (yangDipencet[39] == true) {
+          player.xSpeed = player.xSpeed + 1;
+        }
+        //panah atas
+        if (yangDipencet[38] == true) {
+            player.ySpeed = player.ySpeed - 1;
+        }
+        //panah bawah
+        if (yangDipencet[40] == true) {
+            player.ySpeed = player.ySpeed + 1;
+        }
+      }
+      function keyUp(e) {
+        delete yangDipencet[e.keyCode];
+      }
+
+
       //    Gambar Bola belum fix 
       function gambar_bola() {
         /* -- Menggambar Bola -- */
@@ -94,20 +123,8 @@
           player.x - player.jarijari,
           player.y + player.jarijari + 80
         );
-        ctx.fillText(
-          "Jarak: " +
-            euDist(player.x, player.y, player.x_tujuan, player.y_tujuan).toFixed(2),
-          player.x - player.jarijari,
-          player.y + player.jarijari + 80
-        );
+        
 
-        //Update kecepatan player - haste arrive
-        if (player.seek == true) {
-          var speed = Math.round(
-            euDist(player.x, player.y, player.x_tujuan, player.y_tujuan) / 20
-          );
-          player.offset = -speed;
-        }
       }
 
       /* -- penggambaran dinamis -- */
