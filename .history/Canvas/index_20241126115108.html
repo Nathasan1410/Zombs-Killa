@@ -142,7 +142,7 @@
       player.updateAngle(targetX, targetY);
 
       // Fire a projectile in the direction the player is facing
-      const projectile = new Projectile(player.x, player.y, player.angle-0.50);
+      const projectile = new Projectile(player.x, player.y, player.angle+0.50);
       projectiles.push(projectile);
     });
 
