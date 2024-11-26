@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zombs Killa</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+    #gameStats {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #333;
+      background-color: rgba(255,255,255,0.7);
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameStats">
+    <div>Enemies: <span id="enemyCount">0</span></div>
+    <div>Score: <span id="scoreDisplay">0</span></div>
+    <div>Bullets: <span id="bulletCount">7</span></div>
+  </div>
+  <canvas id="myCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth - 20;
+    canvas.height = window.innerHeight - 20;
+
+    class Player {
+      constructor() {
+        this.x = canvas.width / 2;
+        this.y = canvas.height / 2;
+        this.radius = 20;
+        this.color = this.getRandomColor();
+        this.xSpeed = 0;
+        this.ySpeed = 0;
+        this.maxSpeed = 5;
+        this.acceleration = 0.5;
+        this.angle = 0;
+        this.bulletCount = 7; // Max bullets
+      }
+
+      getRandomColor() {
+        return "#" + (((1 << 24) * Math.random()) | 0).toString(16);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle * Math.PI);
+
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(0, -this.radius);
+        ctx.lineTo(10, -10);
+        ctx.lineTo(-10, -10);
+        ctx.closePath();
+        ctx.fillStyle = "#ffff00";
+        ctx.fill();
+        ctx.restore();
+      }
+
+      move() {
+        this.x += this.xSpeed;
+        this.y += this.ySpeed;
+
+        this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+        this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+      }
+
+      updateAngle(targetX, targetY) {
+        const dx = targetX - this.x;
+        const dy = targetY - this.y;
+        this.angle = Math.atan2(dy, dx) / Math.PI + 0.5;
+      }
+    }
+
+    class Projectile {
+      constructor(x, y, angle) {
+        this.x = x;
+        this.y = y;
+        this.radius = 5;
+        this.speed = 10;
+        this.angle = angle;
+        this.color = "orange";
+      }
+
+      move() {
+        this.x += Math.cos((this.angle - 0.5) * Math.PI) * this.speed;
+        this.y += Math.sin((this.angle - 0.5) * Math.PI) * this.speed;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+
+      isOutOfBounds() {
+        return (
+          this.x < 0 ||
+          this.x > canvas.width ||
+          this.y < 0 ||
+          this.y > canvas.height
+        );
+      }
+    }
+
+    class GameState {
+      constructor() {
+        this.player = new Player();
+        this.projectiles = [];
+      }
+
+      update() {
+        this.player.move();
+
+        this.projectiles = this.projectiles.filter(projectile => {
+          projectile.move();
+          return !projectile.isOutOfBounds();
+        });
+      }
+
+      draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        this.player.draw();
+        this.projectiles.forEach(projectile => projectile.draw());
+      }
+    }
+
+    const game = new GameState();
+
+    const keys = {};
+    window.addEventListener("keydown", (e) => {
+      keys[e.key] = true;
+
+      if (e.key === 'r') {
+        game.player.bulletCount = 7; // Reload
+        document.getElementById('bulletCount').textContent = game.player.bulletCount;
+      }
+    });
+    window.addEventListener("keyup", (e) => (keys[e.key] = false));
+
+    function handleMovement() {
+      if (keys["a"] && game.player.xSpeed > -game.player.maxSpeed)
+        game.player.xSpeed -= game.player.acceleration;
+      if (keys["d"] && game.player.xSpeed < game.player.maxSpeed)
+        game.player.xSpeed += game.player.acceleration;
+      if (keys["w"] && game.player.ySpeed > -game.player.maxSpeed)
+        game.player.ySpeed -= game.player.acceleration;
+      if (keys["s"] && game.player.ySpeed < game.player.maxSpeed)
+        game.player.ySpeed += game.player.acceleration;
+
+      if (!keys["a"] && !keys["d"]) game.player.xSpeed *= 0.9;
+      if (!keys["w"] && !keys["s"]) game.player.ySpeed *= 0.9;
+    }
+
+    window.addEventListener("mousedown", (e) => {
+      if (game.player.bulletCount > 0) {
+        const targetX = e.pageX - canvas.offsetLeft;
+        const targetY = e.pageY - canvas.offsetTop;
+        game.player.updateAngle(targetX, targetY);
+
+        const projectile = new Projectile(game.player.x, game.player.y, game.player.angle);
+        game.projectiles.push(projectile);
+
+        game.player.bulletCount -= 1; // Decrease bullet count
+        document.getElementById('bulletCount').textContent = game.player.bulletCount;
+      } else {
+        alert('Out of bullets! Press "R" to reload.');
+      }
+    });
+
+    function gameLoop() {
+      handleMovement();
+      game.update();
+      game.draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>

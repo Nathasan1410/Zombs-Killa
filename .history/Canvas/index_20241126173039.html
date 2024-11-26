@@ -467,10 +467,6 @@
       // Move spawning intervals outside the `gameLoop`
       setInterval(() => game.spawnEnemy(), GAME_CONFIG.spawnInterval);
       setInterval(() => game.spawnAmmo(), 5000);
-
-      // Start Game
-      window.game = game;
-      gameLoop();
-    </script> 
+    </script>
   </body>
 </html>

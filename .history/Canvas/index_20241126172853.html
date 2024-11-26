@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zombs Killa</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #f0f0f0;
+        font-family: Arial, sans-serif;
+      }
+      #gameStats {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: #333;
+        background-color: rgba(255, 255, 255, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+      }
+      #myCanvas {
+        border: 2px solid #000000;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gameStats">
+      <div>Enemies: <span id="enemyCount">0</span></div>
+      <div>Score: <span id="scoreDisplay">0</span></div>
+      <div>Ammo: <span id="ammoCount">5</span></div>
+    </div>
+    <canvas id="myCanvas"></canvas>
+    <script>
+          // Canvas Setup
+          const canvas = document.getElementById("myCanvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = window.innerWidth - 20;
+          canvas.height = window.innerHeight - 20;
+
+          // Game Configuration
+          const GAME_CONFIG = {
+            enemyCount: 5,
+            enemyRadius: 15,
+            enemySpeed: 1.5,
+            spawnInterval: 3000,
+            difficulty: 1
+          };
+
+          class Ammo {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.radius = 10;
+          this.color = "#00ff00"; // Green for ammo
+        }
+
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+          ctx.fillStyle = this.color;
+          ctx.fill();
+        }
+      }
+
+
+          // Enemy Class
+          class Enemy {
+            constructor(x, y, target) {
+              this.x = x;
+              this.y = y;
+              this.radius = GAME_CONFIG.enemyRadius;
+              this.color = this.getRandomColor();
+              this.target = target;
+              this.speed = GAME_CONFIG.enemySpeed;
+            }
+
+            getRandomColor() {
+              const colors = ['#ff6b6b', '#ff9ff3', '#54a0ff', '#5f27cd'];
+              return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            move() {
+              const dx = this.target.x - this.x;
+              const dy = this.target.y - this.y;
+
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              // Slight randomness in movement
+              const randomFactor = 0.1 * (Math.random() - 0.5);
+
+              const directionX = (dx / distance) * (this.speed + randomFactor);
+              const directionY = (dy / distance) * (this.speed + randomFactor);
+
+              // Tambahkan pengecekan tabrakan dengan enemy lain
+              const game = window.game; // Akses game state global
+              const proposedX = this.x + directionX;
+              const proposedY = this.y + directionY;
+
+              // Cek tabrakan dengan enemy lain
+              const isColliding = game.enemies.some(otherEnemy => {
+                if (otherEnemy === this) return false; // Hindari pengecekan dengan diri sendiri
+
+                const dx = otherEnemy.x - proposedX;
+                const dy = otherEnemy.y - proposedY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Jika jarak kurang dari diameter, berarti saling tumpang tindih
+                return distance < (this.radius + otherEnemy.radius);
+              });
+
+              // Hanya update posisi jika tidak ada tabrakan
+              if (!isColliding) {
+                this.x = proposedX;
+                this.y = proposedY;
+              }
+            }
+
+            draw() {
+              ctx.beginPath();
+              ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+              ctx.fillStyle = this.color;
+              ctx.fill();
+            }
+
+            checkCollision() {
+              const dx = this.x - this.target.x;
+              const dy = this.y - this.target.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              return distance < (this.radius + this.target.radius);
+            }
+          }
+
+          // Player Class
+          class Player {
+            constructor() {
+              this.x = canvas.width / 2;
+              this.y = canvas.height / 2;
+              this.radius = 20;
+              this.color = this.getRandomColor();
+              this.xSpeed = 0;
+              this.ySpeed = 0;
+              this.maxSpeed = 5;
+              this.acceleration = 0.5;
+              this.angle = 0;
+            }
+
+            getRandomColor() {
+              return "#" + (((1 << 24) * Math.random()) | 0).toString(16);
+            }
+
+            draw() {
+              ctx.save();
+              ctx.translate(this.x, this.y);
+              ctx.rotate(this.angle * Math.PI);
+
+              // Player body
+              ctx.beginPath();
+              ctx.arc(0, 0, this.radius, 0, 2 * Math.PI);
+              ctx.fillStyle = this.color;
+              ctx.fill();
+
+              // Direction indicator
+              ctx.beginPath();
+              ctx.moveTo(0, -this.radius);
+              ctx.lineTo(10, -10);
+              ctx.lineTo(-10, -10);
+              ctx.closePath();
+              ctx.fillStyle = "#ffff00";
+              ctx.fill();
+
+              ctx.restore();
+
+              // Display player info
+              ctx.fillStyle = "#000000";
+              ctx.font = "14px Arial";
+              ctx.fillText(`xSpeed: ${this.xSpeed}`, this.x - this.radius, this.y + this.radius + 20);
+              ctx.fillText(`ySpeed: ${this.ySpeed}`, this.x - this.radius, this.y + this.radius + 40);
+              ctx.fillText(`Angle: ${this.angle.toFixed(2)}`, this.x - this.radius, this.y + this.radius + 60);
+              ctx.fillText(`Coord: (${this.x.toFixed(2)}, ${this.y.toFixed(2)})`, this.x - this.radius, this.y + this.radius + 80);
+            }
+
+            move() {
+              this.x += this.xSpeed;
+              this.y += this.ySpeed;
+
+              // Boundary handling
+              this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+              this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+            }
+
+            updateAngle(targetX, targetY) {
+              const dx = targetX - this.x;
+              const dy = targetY - this.y;
+              this.angle = Math.atan2(dy, dx) / Math.PI + 0.5;
+            }
+          }
+
+          // Projectile Class
+          class Projectile {
+            constructor(x, y, angle) {
+              this.x = x;
+              this.y = y;
+              this.radius = 5;
+              this.speed = 10;
+              this.angle = angle;
+              this.color = "orange";
+            }
+
+            move() {
+              this.x += Math.cos((this.angle - 0.5) * Math.PI) * this.speed;
+              this.y += Math.sin((this.angle - 0.5) * Math.PI) * this.speed;
+            }
+
+            draw() {
+              ctx.beginPath();
+              ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+              ctx.fillStyle = this.color;
+              ctx.fill();
+            }
+
+            isOutOfBounds() {
+              return (
+                this.x < 0 ||
+                this.x > canvas.width ||
+                this.y < 0 ||
+                this.y > canvas.height
+              );
+            }
+          }
+
+          // Game State
+          class GameState {
+        constructor() {
+          this.player = new Player();
+          this.enemies = [];
+          this.projectiles = [];
+          this.ammo = []; // Array of ammo objects
+          this.ammoCount = 5; // Initial ammo
+          this.score = 0;
+          this.gameOver = false;
+        }
+
+        spawnAmmo() {
+          const ammoX = Math.random() * (canvas.width - 50) + 25;
+          const ammoY = Math.random() * (canvas.height - 50) + 25;
+          this.ammo.push(new Ammo(ammoX, ammoY));
+        }
+
+        collectAmmo() {
+          for (let i = this.ammo.length - 1; i >= 0; i--) {
+            const bullet = this.ammo[i];
+            const dx = bullet.x - this.player.x;
+            const dy = bullet.y - this.player.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < bullet.radius + this.player.radius) {
+              this.ammo.splice(i, 1); // Remove ammo from the canvas
+              this.ammoCount++; // Increase ammo count
+              document.getElementById('ammoCount').textContent = this.ammoCount; // Update ammo count
+
+            }
+          }
+        }
+
+        spawnEnemy() {
+              if (this.enemies.length >= GAME_CONFIG.enemyCount) return;
+
+              const spawnEdges = [
+                { x: -50, y: Math.random() * canvas.height },
+                { x: canvas.width + 50, y: Math.random() * canvas.height },
+                { x: Math.random() * canvas.width, y: -50 },
+                { x: Math.random() * canvas.width, y: canvas.height + 50 }
+              ];
+
+              let attempts = 0;
+              while (attempts < 10) {
+                const spawnPoint = spawnEdges[Math.floor(Math.random() * spawnEdges.length)];
+                const potentialEnemy = new Enemy(spawnPoint.x, spawnPoint.y, this.player);
+
+                // Periksa tabrakan dengan enemy lain
+                const isColliding = this.enemies.some(existingEnemy => {
+                  // Kembangkan metode checkCollision untuk enemy
+                  const dx = existingEnemy.x - potentialEnemy.x;
+                  const dy = existingEnemy.y - potentialEnemy.y;
+                  const distance = Math.sqrt(dx * dx + dy * dy);
+                  return distance < (existingEnemy.radius + potentialEnemy.radius);
+                });
+
+                // Jika tidak ada tabrakan, tambahkan enemy
+                if (!isColliding) {
+                  this.enemies.push(potentialEnemy);
+                  document.getElementById('enemyCount').textContent = this.enemies.length;
+                  break;
+                }
+
+                attempts++;
+              }
+            }
+
+            checkCollisions() {
+              // Enemy-Projectile Collisions
+              for (let i = this.enemies.length - 1; i >= 0; i--) {
+                for (let j = this.projectiles.length - 1; j >= 0; j--) {
+                  const enemy = this.enemies[i];
+                  const projectile = this.projectiles[j];
+
+                  const dx = enemy.x - projectile.x;
+                  const dy = enemy.y - projectile.y;
+                  const distance = Math.sqrt(dx * dx + dy * dy);
+
+                  if (distance < enemy.radius + projectile.radius) {
+                    this.enemies.splice(i, 1);
+                    this.projectiles.splice(j, 1);
+                    this.score += 10;
+                    document.getElementById('scoreDisplay').textContent = this.score;
+                    document.getElementById('enemyCount').textContent = this.enemies.length;
+                    break;
+                  }
+                }
+              }
+
+              // Player-Enemy Collisions
+              for (let enemy of this.enemies) {
+                if (enemy.checkCollision()) {
+                  this.gameOver = true;
+                  alert(`Game Over! Score: ${this.score}`);
+                  break;
+                }
+              }
+            }
+
+            update() {
+              if (this.gameOver) return;
+
+              // Move player
+              this.player.move();
+
+              // Move and manage enemies
+              this.enemies.forEach(enemy => enemy.move());
+
+              // Move and filter projectiles
+              this.projectiles = this.projectiles.filter(projectile => {
+                projectile.move();
+                return !projectile.isOutOfBounds();
+              });
+              this.collectAmmo(); // Add this to the `update` method
+
+              // Check collisions
+              this.checkCollisions();
+            }
+
+            draw() {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              this.ammo.forEach(ammo => ammo.draw());
+              this.player.draw();
+              this.enemies.forEach(enemy => enemy.draw());
+              this.projectiles.forEach(projectile => projectile.draw());
+            }
+      }
+
+          // Game Instance
+          const game = new GameState();
+
+          // Input Handling
+          const keys = {};
+          window.addEventListener("keydown", (e) => {
+            keys[e.key] = true;
+
+            // Difficulty adjustment
+            if (e.key === '+') {
+              GAME_CONFIG.enemyCount++;
+              game.spawnEnemy();
+            }
+            if (e.key === '-' && GAME_CONFIG.enemyCount > 0) {
+              GAME_CONFIG.enemyCount--;
+              if (game.enemies.length > GAME_CONFIG.enemyCount) {
+                game.enemies.pop();
+                document.getElementById('enemyCount').textContent = game.enemies.length;
+              }
+            }
+          });
+          window.addEventListener("keyup", (e) => (keys[e.key] = false));
+
+          // Movement
+          function handleMovement() {
+            if (keys["a"] && game.player.xSpeed > -game.player.maxSpeed)
+              game.player.xSpeed -= game.player.acceleration;
+            if (keys["d"] && game.player.xSpeed < game.player.maxSpeed)
+              game.player.xSpeed += game.player.acceleration;
+            if (keys["w"] && game.player.ySpeed > -game.player.maxSpeed)
+              game.player.ySpeed -= game.player.acceleration;
+            if (keys["s"] && game.player.ySpeed < game.player.maxSpeed)
+              game.player.ySpeed += game.player.acceleration;
+
+            // Friction
+            if (!keys["a"] && !keys["d"]) game.player.xSpeed *= 0.9;
+            if (!keys["w"] && !keys["s"]) game.player.ySpeed *= 0.9;
+          }
+
+          // Shooting
+          window.addEventListener("mousedown", (e) => {
+        if (game.ammoCount > 0) {
+          const targetX = e.pageX - canvas.offsetLeft;
+          const targetY = e.pageY - canvas.offsetTop;
+          game.player.updateAngle(targetX, targetY);
+
+          const projectile = new Projectile(game.player.x, game.player.y, game.player.angle);
+          game.projectiles.push(projectile);
+
+          game.ammoCount--; // Decrease ammo count
+          document.getElementById('ammoCount').textContent = game.ammoCount; // Update ammo count after shooting
+
+
+        }
+      });
+
+
+          // Initial enemy spawning
+          for (let i = 0; i < GAME_CONFIG.enemyCount; i++) {
+            game.spawnEnemy();
+          }
+
+          // Periodic enemy spawning
+          setInterval(() => game.spawnEnemy(), GAME_CONFIG.spawnInterval);
+
+          // Game Loop
+          function gameLoop() {
+            handleMovement();
+            game.update();
+            game.draw();
+            requestAnimationFrame(gameLoop);
+          }
+          
+          // Start Game
+          window.game = game;
+          gameLoop();
+          setInterval(() => game.spawnAmmo(), 5000); // Ammo spawns every 5 seconds
+    </script>
+  </body>
+</html>

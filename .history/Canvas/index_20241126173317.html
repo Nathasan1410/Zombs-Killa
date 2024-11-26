@@ -215,7 +215,8 @@
         updateAngle(targetX, targetY) {
           const dx = targetX - this.x;
           const dy = targetY - this.y;
-          this.angle = Math.atan2(dy, dx) / Math.PI + 0.5;
+          this.angle = Math.atan2(dy, dx); // Correct angle without division
+
         }
       }
 
