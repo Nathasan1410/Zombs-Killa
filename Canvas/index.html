@@ -20,6 +20,32 @@
         padding: 10px;
         border-radius: 5px;
       }
+
+      #gameControls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(255, 255, 255, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    #gameControls button {
+        font-size: 14px;
+        padding: 5px 10px;
+        margin: 5px;
+        cursor: pointer;
+        border: none;
+        border-radius: 3px;
+        background-color: #ff0000;
+        color: #fff;
+    }
+
+    #gameControls button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+
       #myCanvas {
         border: 2px solid #000000;
       }
@@ -31,6 +57,13 @@
       <div>Score: <span id="scoreDisplay">0</span></div>
       <div>Ammo: <span id="ammoCount">5</span></div>
     </div>
+
+    <div id="gameControls">
+        <button id="startButton">Start</button>
+        <button id="pauseButton" disabled>Pause</button>
+        <button id="restartButton" disabled>Restart</button>
+      </div>
+      
     <canvas id="myCanvas"></canvas>
     <script>
       // Canvas Setup
@@ -38,6 +71,10 @@
       const ctx = canvas.getContext("2d");
       canvas.width = window.innerWidth - 20;
       canvas.height = window.innerHeight - 20;
+
+      // Global game state management variables
+      let isGameRunning = false;
+      let gameLoopHandle;
 
       // Game Configuration
       const GAME_CONFIG = {
@@ -47,6 +84,42 @@
         spawnInterval: 3000,
         difficulty: 1,
       };
+
+    function startGame() {
+        if (!isGameRunning) {
+            isGameRunning = true;
+            gameLoopHandle = requestAnimationFrame(gameLoop);
+
+            // Enable/disable relevant buttons
+            document.getElementById("startButton").disabled = true;
+            document.getElementById("pauseButton").disabled = false;
+            document.getElementById("restartButton").disabled = false;
+        }
+    }
+
+    function pauseGame() {
+        if (isGameRunning) {
+            isGameRunning = false;
+            cancelAnimationFrame(gameLoopHandle);
+
+            // Enable/disable relevant buttons
+            document.getElementById("startButton").disabled = false;
+            document.getElementById("pauseButton").disabled = true;
+        }
+    }
+
+    function restartGame() {
+        if (isGameRunning) {
+            pauseGame(); // Pause the game first if running
+        }
+
+        game.resetGame(); // Reset the game state
+        startGame(); // Start the game immediately after reset
+    }
+
+    document.getElementById("startButton").addEventListener("click", startGame);
+    document.getElementById("pauseButton").addEventListener("click", pauseGame);
+    document.getElementById("restartButton").addEventListener("click", restartGame);
 
       class Ammo {
         constructor(x, y) {
@@ -105,7 +178,7 @@
             const dy = otherEnemy.y - proposedY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            // Jika jarak kurang dari diameter, berarti saling tumpang tindih
+          // Jika jarak kurang dari diameter, berarti saling tumpang tindih
             return distance < this.radius + otherEnemy.radius;
           });
 
@@ -353,8 +426,8 @@
           // Player-Enemy Collisions
           for (let enemy of this.enemies) {
             if (enemy.checkCollision()) {
-              this.gameOver = true;
               alert(`Game Over! Score: ${this.score}`);
+              this.resetGame(); // Reset the game state
               break;
             }
           }
@@ -378,6 +451,25 @@
 
           // Check collisions
           this.checkCollisions();
+        }
+
+        resetGame() {
+          this.player = new Player();
+          this.enemies = [];
+          this.projectiles = [];
+          this.ammo = [];
+          this.ammoCount = 5;
+          this.score = 0;
+          this.gameOver = false;
+            
+          document.getElementById("enemyCount").textContent = 0;
+          document.getElementById("scoreDisplay").textContent = 0;
+          document.getElementById("ammoCount").textContent = this.ammoCount;
+
+          // Initial enemy spawning
+          for (let i = 0; i < GAME_CONFIG.enemyCount; i++) {
+            this.spawnEnemy();
+          }
         }
 
         draw() {
@@ -429,24 +521,26 @@
         if (!keys["w"] && !keys["s"]) game.player.ySpeed *= 0.9;
       }
 
-      // Shooting
-      window.addEventListener("mousedown", (e) => {
-        if (game.ammoCount > 0) {
-          const targetX = e.pageX - canvas.offsetLeft;
-          const targetY = e.pageY - canvas.offsetTop;
-          game.player.updateAngle(targetX, targetY);
+        // Shooting
+        window.addEventListener("mousedown", (e) => {
+        if (!isGameRunning) return; // Prevent shooting when the game is paused or not started
 
-          const projectile = new Projectile(
+        if (game.ammoCount > 0) {
+            const targetX = e.pageX - canvas.offsetLeft;
+            const targetY = e.pageY - canvas.offsetTop;
+            game.player.updateAngle(targetX, targetY);
+
+            const projectile = new Projectile(
             game.player.x,
             game.player.y,
             game.player.angle
-          );
-          game.projectiles.push(projectile);
+            );
+            game.projectiles.push(projectile);
 
-          game.ammoCount--; // Decrease ammo count
-          document.getElementById("ammoCount").textContent = game.ammoCount; // Update ammo count after shooting
+            game.ammoCount--; // Decrease ammo count
+            document.getElementById("ammoCount").textContent = game.ammoCount; // Update ammo count after shooting
         }
-      });
+        });
 
       // Initial enemy spawning
       for (let i = 0; i < GAME_CONFIG.enemyCount; i++) {
@@ -457,12 +551,14 @@
       setInterval(() => game.spawnEnemy(), GAME_CONFIG.spawnInterval);
 
       // Game Loop
-      function gameLoop() {
+    function gameLoop() {
+        if (!isGameRunning) return;
+
         handleMovement();
         game.update();
         game.draw();
-        requestAnimationFrame(gameLoop); // Remove unnecessary interval here
-      }
+        gameLoopHandle = requestAnimationFrame(gameLoop);
+    }
 
       // Move spawning intervals outside the `gameLoop`
       setInterval(() => game.spawnEnemy(), GAME_CONFIG.spawnInterval);
