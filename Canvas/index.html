@@ -28,9 +28,9 @@
         background-color: rgba(255, 255, 255, 0.7);
         padding: 10px;
         border-radius: 5px;
-    }
+      }
 
-    #gameControls button {
+      #gameControls button {
         font-size: 14px;
         padding: 5px 10px;
         margin: 5px;
@@ -39,15 +39,51 @@
         border-radius: 3px;
         background-color: #ff0000;
         color: #fff;
-    }
+      }
 
-    #gameControls button:disabled {
+      #gameControls button:disabled {
         background-color: #cccccc;
         cursor: not-allowed;
-    }
+      }
 
       #myCanvas {
         border: 2px solid #000000;
+      }
+
+      #gameOverOverlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      #gameOverContent {
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      #gameOverContent h1 {
+        margin-bottom: 20px;
+        color: #ff0000;
+      }
+
+      #gameOverContent button {
+        margin-top: 15px;
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
       }
     </style>
   </head>
@@ -58,13 +94,22 @@
       <div>Ammo: <span id="ammoCount">5</span></div>
     </div>
 
-    <div id="gameControls">
-        <button id="startButton">Start</button>
-        <button id="pauseButton" disabled>Pause</button>
-        <button id="restartButton" disabled>Restart</button>
-      </div>
-      
+    <div id="gameControls" onmousedown="event.stopPropagation()">
+      <button id="startButton">Start</button>
+      <button id="pauseButton" disabled>Pause</button>
+      <button id="restartButton" disabled>Restart</button>
+    </div>
+
     <canvas id="myCanvas"></canvas>
+
+    <div id="gameOverOverlay">
+      <div id="gameOverContent">
+        <h1>Game Over</h1>
+        <p>Your Score: <span id="finalScore">0</span></p>
+        <button id="restartGameButton">Restart Game</button>
+      </div>
+    </div>
+
     <script>
       // Canvas Setup
       const canvas = document.getElementById("myCanvas");
@@ -85,41 +130,48 @@
         difficulty: 1,
       };
 
-    function startGame() {
+      function startGame() {
         if (!isGameRunning) {
-            isGameRunning = true;
-            gameLoopHandle = requestAnimationFrame(gameLoop);
+          isGameRunning = true;
+          gameLoopHandle = requestAnimationFrame(gameLoop);
 
-            // Enable/disable relevant buttons
-            document.getElementById("startButton").disabled = true;
-            document.getElementById("pauseButton").disabled = false;
-            document.getElementById("restartButton").disabled = false;
+          // Enable/disable relevant buttons
+          document.getElementById("startButton").disabled = true;
+          document.getElementById("pauseButton").disabled = false;
+          document.getElementById("restartButton").disabled = false;
         }
-    }
+      }
 
-    function pauseGame() {
+      function pauseGame() {
         if (isGameRunning) {
-            isGameRunning = false;
-            cancelAnimationFrame(gameLoopHandle);
+          isGameRunning = false;
+          cancelAnimationFrame(gameLoopHandle);
 
-            // Enable/disable relevant buttons
-            document.getElementById("startButton").disabled = false;
-            document.getElementById("pauseButton").disabled = true;
+          // Enable/disable relevant buttons
+          document.getElementById("startButton").disabled = false;
+          document.getElementById("pauseButton").disabled = true;
         }
-    }
+      }
 
-    function restartGame() {
+      function restartGame() {
         if (isGameRunning) {
-            pauseGame(); // Pause the game first if running
+          pauseGame(); // Pause the game first if running
         }
 
-        game.resetGame(); // Reset the game state
-        startGame(); // Start the game immediately after reset
-    }
+        // Reset game
+        game.resetGame();
+        startGame();
+      }
 
-    document.getElementById("startButton").addEventListener("click", startGame);
-    document.getElementById("pauseButton").addEventListener("click", pauseGame);
-    document.getElementById("restartButton").addEventListener("click", restartGame);
+      document
+        .getElementById("startButton")
+        .addEventListener("click", startGame);
+      document
+        .getElementById("pauseButton")
+        .addEventListener("click", pauseGame);
+      document
+        .getElementById("restartButton")
+        .addEventListener("click", restartGame);
 
       class Ammo {
         constructor(x, y) {
@@ -135,6 +187,36 @@
           ctx.fillStyle = this.color;
           ctx.fill();
         }
+      }
+
+      // Class Explosion
+      class Explosion {
+          constructor(x, y) {
+              this.x = x;
+              this.y = y;
+              this.radius = 10;
+              this.maxRadius = 30;
+              this.opacity = 1;
+              this.color = "rgba(255, 165, 0, 1)"; // Warna oranye dengan opacity
+              this.expansionSpeed = 3;
+              this.fadeSpeed = 0.1;
+          }
+
+          update() {
+              this.radius += this.expansionSpeed;
+              this.opacity -= this.fadeSpeed;
+          }
+
+          draw() {
+              ctx.beginPath();
+              ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+              ctx.fillStyle = `rgba(255, 165, 0, ${this.opacity})`;
+              ctx.fill();
+          }
+
+          isFinished() {
+              return this.opacity <= 0;
+          }
       }
 
       // Enemy Class
@@ -178,7 +260,7 @@
             const dy = otherEnemy.y - proposedY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-          // Jika jarak kurang dari diameter, berarti saling tumpang tindih
+            // Jika jarak kurang dari diameter, berarti saling tumpang tindih
             return distance < this.radius + otherEnemy.radius;
           });
 
@@ -246,28 +328,28 @@
           ctx.restore();
 
           // Display player info
-          ctx.fillStyle = "#000000";
-          ctx.font = "14px Arial";
-          ctx.fillText(
-            `xSpeed: ${this.xSpeed}`,
-            this.x - this.radius,
-            this.y + this.radius + 20
-          );
-          ctx.fillText(
-            `ySpeed: ${this.ySpeed}`,
-            this.x - this.radius,
-            this.y + this.radius + 40
-          );
-          ctx.fillText(
-            `Angle: ${this.angle.toFixed(2)}`,
-            this.x - this.radius,
-            this.y + this.radius + 60
-          );
-          ctx.fillText(
-            `Coord: (${this.x.toFixed(2)}, ${this.y.toFixed(2)})`,
-            this.x - this.radius,
-            this.y + this.radius + 80
-          );
+          // ctx.fillStyle = "#000000";
+          // ctx.font = "14px Arial";
+          // ctx.fillText(
+          //   `xSpeed: ${this.xSpeed}`,
+          //   this.x - this.radius,
+          //   this.y + this.radius + 20
+          // );
+          // ctx.fillText(
+          //   `ySpeed: ${this.ySpeed}`,
+          //   this.x - this.radius,
+          //   this.y + this.radius + 40
+          // );
+          // ctx.fillText(
+          //   `Angle: ${this.angle.toFixed(2)}`,
+          //   this.x - this.radius,
+          //   this.y + this.radius + 60
+          // );
+          // ctx.fillText(
+          //   `Coord: (${this.x.toFixed(2)}, ${this.y.toFixed(2)})`,
+          //   this.x - this.radius,
+          //   this.y + this.radius + 80
+          // );
         }
 
         move() {
@@ -332,6 +414,7 @@
           this.enemies = [];
           this.projectiles = [];
           this.ammo = []; // Array of ammo objects
+          this.explosions = []; // Tambahkan array explosions
           this.ammoCount = 5; // Initial ammo
           this.score = 0;
           this.gameOver = false;
@@ -352,7 +435,7 @@
 
             if (distance < bullet.radius + this.player.radius) {
               this.ammo.splice(i, 1); // Remove ammo from the canvas
-              this.ammoCount+=4; // Increase ammo count
+              this.ammoCount += 4; // Increase ammo count
               document.getElementById("ammoCount").textContent = this.ammoCount; // Update ammo count
             }
           }
@@ -411,13 +494,13 @@
               const distance = Math.sqrt(dx * dx + dy * dy);
 
               if (distance < enemy.radius + projectile.radius) {
+                // Tambahkan efek ledakan
+                this.explosions.push(new Explosion(enemy.x, enemy.y));
                 this.enemies.splice(i, 1);
                 this.projectiles.splice(j, 1);
                 this.score += 10;
-                document.getElementById("scoreDisplay").textContent =
-                  this.score;
-                document.getElementById("enemyCount").textContent =
-                  this.enemies.length;
+                document.getElementById("scoreDisplay").textContent = this.score;
+                document.getElementById("enemyCount").textContent = this.enemies.length;
                 break;
               }
             }
@@ -426,8 +509,23 @@
           // Player-Enemy Collisions
           for (let enemy of this.enemies) {
             if (enemy.checkCollision()) {
-              alert(`Game Over! Score: ${this.score}`);
-              this.resetGame(); // Reset the game state
+              this.gameOver = true;
+
+              // Hentikan game loop
+              cancelAnimationFrame(gameLoopHandle);
+              isGameRunning = false;
+
+              // Tampilkan overlay game over
+              const gameOverOverlay =
+                document.getElementById("gameOverOverlay");
+              const finalScoreElement = document.getElementById("finalScore");
+              finalScoreElement.textContent = this.score;
+              gameOverOverlay.style.display = "flex";
+
+              // Matikan tombol game
+              document.getElementById("startButton").disabled = true;
+              document.getElementById("pauseButton").disabled = true;
+              document.getElementById("restartButton").disabled = true;
               break;
             }
           }
@@ -449,24 +547,46 @@
           });
           this.collectAmmo(); // Add this to the `update` method
 
+          this.explosions = this.explosions.filter(explosion => {
+            explosion.update();
+            return !explosion.isFinished();
+          });
+
           // Check collisions
           this.checkCollisions();
         }
 
         resetGame() {
+          // Pastikan semua variabel game direset dengan benar
           this.player = new Player();
           this.enemies = [];
           this.projectiles = [];
           this.ammo = [];
+          this.explosions = [];
           this.ammoCount = 5;
           this.score = 0;
           this.gameOver = false;
-            
+
+          // Reset tampilan
           document.getElementById("enemyCount").textContent = 0;
           document.getElementById("scoreDisplay").textContent = 0;
           document.getElementById("ammoCount").textContent = this.ammoCount;
 
-          // Initial enemy spawning
+          // Reset button states
+          document.getElementById("startButton").disabled = false;
+          document.getElementById("pauseButton").disabled = true;
+          document.getElementById("restartButton").disabled = true;
+
+          // Sembunyikan overlay game over jika masih tampil
+          document.getElementById("gameOverOverlay").style.display = "none";
+
+          // Hentikan game loop jika sedang berjalan
+          if (isGameRunning) {
+            cancelAnimationFrame(gameLoopHandle);
+            isGameRunning = false;
+          }
+
+          // Spawn initial enemies
           for (let i = 0; i < GAME_CONFIG.enemyCount; i++) {
             this.spawnEnemy();
           }
@@ -478,6 +598,8 @@
           this.player.draw();
           this.enemies.forEach((enemy) => enemy.draw());
           this.projectiles.forEach((projectile) => projectile.draw());
+          // Tambahkan drawing untuk explosions
+          this.explosions.forEach((explosion) => explosion.draw());
         }
       }
 
@@ -521,26 +643,26 @@
         if (!keys["w"] && !keys["s"]) game.player.ySpeed *= 0.9;
       }
 
-        // Shooting
-        window.addEventListener("mousedown", (e) => {
+      // Shooting
+      window.addEventListener("mousedown", (e) => {
         if (!isGameRunning) return; // Prevent shooting when the game is paused or not started
 
         if (game.ammoCount > 0) {
-            const targetX = e.pageX - canvas.offsetLeft;
-            const targetY = e.pageY - canvas.offsetTop;
-            game.player.updateAngle(targetX, targetY);
+          const targetX = e.pageX - canvas.offsetLeft;
+          const targetY = e.pageY - canvas.offsetTop;
+          game.player.updateAngle(targetX, targetY);
 
-            const projectile = new Projectile(
+          const projectile = new Projectile(
             game.player.x,
             game.player.y,
             game.player.angle
-            );
-            game.projectiles.push(projectile);
+          );
+          game.projectiles.push(projectile);
 
-            game.ammoCount--; // Decrease ammo count
-            document.getElementById("ammoCount").textContent = game.ammoCount; // Update ammo count after shooting
+          game.ammoCount--; // Decrease ammo count
+          document.getElementById("ammoCount").textContent = game.ammoCount; // Update ammo count after shooting
         }
-        });
+      });
 
       // Initial enemy spawning
       for (let i = 0; i < GAME_CONFIG.enemyCount; i++) {
@@ -551,14 +673,25 @@
       setInterval(() => game.spawnEnemy(), GAME_CONFIG.spawnInterval);
 
       // Game Loop
-    function gameLoop() {
-        if (!isGameRunning) return;
+      function gameLoop() {
+        if (!isGameRunning || game.gameOver) return;
 
         handleMovement();
         game.update();
         game.draw();
         gameLoopHandle = requestAnimationFrame(gameLoop);
-    }
+      }
+
+      document
+        .getElementById("restartGameButton")
+        .addEventListener("click", () => {
+          // Sembunyikan overlay
+          document.getElementById("gameOverOverlay").style.display = "none";
+
+          // Reset game
+          game.resetGame();
+          startGame();
+        });
 
       // Move spawning intervals outside the `gameLoop`
       setInterval(() => game.spawnEnemy(), GAME_CONFIG.spawnInterval);
@@ -567,6 +700,6 @@
       // Start Game
       window.game = game;
       gameLoop();
-    </script> 
+    </script>
   </body>
 </html>
