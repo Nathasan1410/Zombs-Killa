@@ -109,6 +109,12 @@
         <button id="restartGameButton">Restart Game</button>
       </div>
     </div>
+    
+    <!-- Sounds -->
+
+    <audio id="shotSound" src="shot.mp3" preload="auto"></audio>
+    <audio id="reloadSound" src="reload.mp3" preload="auto"></audio>
+    <audio id="enemySound" src="enemy.mp3" preload="auto"></audio>
 
     <script>
       // Canvas Setup
@@ -427,6 +433,9 @@
         }
 
         collectAmmo() {
+        // Load the ammo collection sound
+        const ammoPickupSound = document.getElementById('reloadSound');
+
           for (let i = this.ammo.length - 1; i >= 0; i--) {
             const bullet = this.ammo[i];
             const dx = bullet.x - this.player.x;
@@ -437,12 +446,21 @@
               this.ammo.splice(i, 1); // Remove ammo from the canvas
               this.ammoCount += 4; // Increase ammo count
               document.getElementById("ammoCount").textContent = this.ammoCount; // Update ammo count
+
+              // Play the ammo pickup sound
+              ammoPickupSound.play();
+              ammoPickupSound.volume = 0.5;
             }
           }
         }
 
         spawnEnemy() {
+          if (!isGameRunning) return; // Stop spawning enemies if the game is paused
+          
           if (this.enemies.length >= GAME_CONFIG.enemyCount) return;
+
+          // Load the enemy spawn sound
+          const enemySpawnSound = document.getElementById('enemySound');
 
           const spawnEdges = [
             { x: -50, y: Math.random() * canvas.height },
@@ -461,6 +479,11 @@
               this.player
             );
 
+            // Play the enemy spawn sound
+            enemySpawnSound.currentTime = 0; // Reset sound to start
+            enemySpawnSound.play();
+            enemySpawnSound.volume = 0.5;
+
             // Periksa tabrakan dengan enemy lain
             const isColliding = this.enemies.some((existingEnemy) => {
               // Kembangkan metode checkCollision untuk enemy
@@ -475,6 +498,7 @@
               this.enemies.push(potentialEnemy);
               document.getElementById("enemyCount").textContent =
                 this.enemies.length;
+
               break;
             }
 
@@ -643,8 +667,11 @@
         if (!keys["w"] && !keys["s"]) game.player.ySpeed *= 0.9;
       }
 
+      const gunshotSound = document.getElementById('shotSound');
+
       // Shooting
       window.addEventListener("mousedown", (e) => {
+
         if (!isGameRunning) return; // Prevent shooting when the game is paused or not started
 
         if (game.ammoCount > 0) {
@@ -661,6 +688,11 @@
 
           game.ammoCount--; // Decrease ammo count
           document.getElementById("ammoCount").textContent = game.ammoCount; // Update ammo count after shooting
+
+          // Play the shot sound
+          gunshotSound.currentTime = 0; // Reset sound to ensure it plays from the start
+          gunshotSound.play();
+          gunshotSound.volume = 0.5;
         }
       });
 
