@@ -5,7 +5,7 @@ Anggota:
 
 71220872/Nathanael Santoso
 
-71220829/Timotios Ekana Tejo Kesuma
+71220829/Timotius Ekana Tejo Kesuma
 
 71220918/P. Harimurti Adi Bagaskara
 
