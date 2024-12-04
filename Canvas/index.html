@@ -519,6 +519,7 @@
             }
 
             spawnAmmo() {
+                if (!isGameRunning) return;
                 const ammoX = Math.random() * (canvas.width - 50) + 25;
                 const ammoY = Math.random() * (canvas.height - 50) + 25;
                 this.ammo.push(new Ammo(ammoX, ammoY));
